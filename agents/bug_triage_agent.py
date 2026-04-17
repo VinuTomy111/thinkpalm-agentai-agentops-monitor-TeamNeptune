@@ -3,6 +3,7 @@ import json
 from typing import Any, Dict
 from groq import AsyncGroq
 from .base_agent import BaseAgent
+from core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +14,17 @@ class BugTriageAgent(BaseAgent):
     """
     def __init__(self, name: str = "BugTriageAgent", model_name: str = "llama-3.1-8b-instant"):
         super().__init__(name)
-        # Assumes GROQ_API_KEY is available in the environment variables
-        self.client = AsyncGroq() 
+        settings = get_settings()
+        if not settings.GROQ_API_KEY:
+            raise ValueError("GROQ_API_KEY is missing. Add it to your .env file.")
+        api_key = settings.GROQ_API_KEY.strip()
+        logger.info(
+            "Agent '%s': Initializing Groq client with key prefix '%s' (len=%d).",
+            self.name,
+            api_key[:8],
+            len(api_key),
+        )
+        self.client = AsyncGroq(api_key=api_key)
         self.model_name = model_name
 
     async def _execute(self, bug_description: str, *args, **kwargs) -> Dict[str, Any]:

@@ -1,6 +1,6 @@
 # AgentOps Monitor
 
-A highly asynchronous, parallelized orchestration pipeline deploying advanced Large Language Models to evaluate software architecture, isolate code faults, and generate real-time developer API documentation completely natively utilizing LangGraph and OpenAI processing.
+A highly asynchronous, parallelized orchestration pipeline deploying advanced Large Language Models to evaluate software architecture, isolate code faults, and generate real-time developer API documentation completely natively utilizing LangGraph and Groq processing.
 
 ## Key Features
 - **Parallel Asynchronous Executions**: Code is sent natively over Langgraph splitting into concurrent evaluations dynamically saving inference latency explicitly.

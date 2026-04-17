@@ -5,6 +5,7 @@ Main FastAPI application setup and entry point.
 import sys
 import uuid
 import time
+import os
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -98,6 +99,13 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     async def startup_event():
         logger.info(f"Service Boot: Spinning up {settings.APP_NAME}.")
+        groq_key = (settings.GROQ_API_KEY or "").strip()
+        logger.info(
+            "Runtime config: GROQ_API_KEY present=%s prefix='%s' len=%d",
+            bool(groq_key),
+            groq_key[:8],
+            len(groq_key),
+        )
 
     @app.on_event("shutdown")
     async def shutdown_event():
@@ -106,6 +114,68 @@ def create_app() -> FastAPI:
     @app.get("/health", tags=["System"])
     async def health_check():
         return {"status": "healthy", "service": settings.APP_NAME}
+
+    @app.get("/debug/runtime", tags=["System"])
+    async def debug_runtime():
+        """
+        Runtime diagnostics endpoint with masked key details.
+        Useful for confirming the active process/interpreter and loaded key source.
+        """
+        settings_key = (settings.GROQ_API_KEY or "").strip()
+        env_key = (os.getenv("GROQ_API_KEY") or "").strip()
+        return {
+            "status": "ok",
+            "pid": os.getpid(),
+            "python_executable": sys.executable,
+            "python_version": sys.version,
+            "cwd": os.getcwd(),
+            "settings_key_present": bool(settings_key),
+            "settings_key_prefix": settings_key[:8],
+            "settings_key_length": len(settings_key),
+            "env_key_present": bool(env_key),
+            "env_key_prefix": env_key[:8],
+            "env_key_length": len(env_key),
+            "keys_match": settings_key == env_key,
+        }
+
+    @app.get("/debug/groq-ping", tags=["System"])
+    async def debug_groq_ping():
+        """
+        Validates Groq connectivity from the currently running API process.
+        """
+        try:
+            from groq import AsyncGroq
+
+            key = (settings.GROQ_API_KEY or "").strip()
+            if not key:
+                return {
+                    "status": "error",
+                    "detail": "GROQ_API_KEY missing in settings",
+                }
+
+            client = AsyncGroq(api_key=key)
+            response = await client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": "ping"}],
+                max_tokens=5,
+            )
+            content = response.choices[0].message.content if response.choices else ""
+            return {
+                "status": "ok",
+                "pid": os.getpid(),
+                "python_executable": sys.executable,
+                "key_prefix": key[:8],
+                "key_length": len(key),
+                "model": "llama-3.1-8b-instant",
+                "response_preview": (content or "")[:80],
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "pid": os.getpid(),
+                "python_executable": sys.executable,
+                "detail": str(e),
+            }
 
     # 4. Integrate API logic mapping layers
     app.include_router(api_router, prefix="/api/v1", tags=["Inference Engine"])

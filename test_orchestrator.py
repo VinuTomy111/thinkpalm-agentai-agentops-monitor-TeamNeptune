@@ -2,6 +2,7 @@ import asyncio
 import logging
 from dotenv import load_dotenv
 import os
+import pytest
 
 # Set up standard format logging to standard out
 logging.basicConfig(
@@ -14,8 +15,9 @@ load_dotenv()
 
 from agents.coordinator_agent import CoordinatorAgent
 
+@pytest.mark.asyncio
 async def test_agent_flows():
-    print(f"OpenAI Key Present: {bool(os.getenv('OPENAI_API_KEY'))}")
+    print(f"Groq Key Present: {bool(os.getenv('GROQ_API_KEY'))}")
     
     # Initialize our Coordinator that wraps LangGraph and the sub-agents
     coordinator = CoordinatorAgent()
