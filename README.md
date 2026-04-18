@@ -1,77 +1,131 @@
 # AgentOps Monitor
 
-A highly asynchronous, parallelized orchestration pipeline deploying advanced Large Language Models to evaluate software architecture, isolate code faults, and generate real-time developer API documentation completely natively utilizing LangGraph and Groq processing.
+AgentOps Monitor is a FastAPI backend that orchestrates multiple AI agents with LangGraph and Groq to analyze code, triage bugs, and produce structured developer-facing insights.
 
-## Key Features
-- **Parallel Asynchronous Executions**: Code is sent natively over Langgraph splitting into concurrent evaluations dynamically saving inference latency explicitly.
-- **Trace Persistence**: Native dictionary routing structures caching all states globally dynamically across endpoints.
-- **Custom Native Validation Tooling**: Integrated `tools/` routing natively reading Python Abstract Syntax Trees (AST) eliminating external binary failures.
+## Project Overview
 
-## System Setup Instructions
+- FastAPI service entrypoint at `src/main.py`
+- Versioned API routes under `src/api/v1`
+- Agent orchestration and routing in `src/agents` and `src/services`
+- In-memory/session state handling in `src/memory`
+- Runtime config via environment variables in `src/.env`
+- Built-in health and debug endpoints for quick runtime validation
 
-### 1. Prerequisites
-Ensure you have Python 3.9+ or higher installed on your environment.
+## Setup
 
-### 2. Environment Configuration
-You must map your Groq authorization explicitly. Copy the `.env.example` mapping to establish an explicit `.env` file in the application root:
+### 1) Prerequisites
+
+- Python 3.9 or newer
+- `pip` installed
+- A valid Groq API key
+
+### 2) Install dependencies
+
+From the project root:
+
+```bash
+cd src
+pip install -r requirements.txt
+```
+
+### 3) Configure environment
+
+Create your local environment file from the template:
+
 ```bash
 cp .env.example .env
 ```
 
-Ensure your `.env` contains your correct key:
+Update at least:
+
 ```env
-GROQ_API_KEY=gsk_your_api_key_here
-APP_NAME="AgentOps Monitor"
-LOG_LEVEL="INFO"
+GROQ_API_KEY="gsk_your-groq-api-key-here"
 ```
 
-### 3. Installation
-Install the necessary python pip dependencies natively:
+Optional values such as `PROJECT_NAME`, `ENVIRONMENT`, and `DEBUG` can also be customized in `.env`.
+
+## How To Run
+
+From the `src` directory:
+
 ```bash
-pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 4. Launching the Backend Server
-Start the core FastAPI interface and architecture routing pipeline using Uvicorn:
+Useful endpoints after startup:
+
+- API docs: `http://localhost:8000/docs`
+- Health check: `http://localhost:8000/health`
+- Runtime diagnostics: `http://localhost:8000/debug/runtime`
+
+## Example API Usage
+
+Use Swagger UI for interactive testing, or call an endpoint directly.
+
+### 1. Health Check
 ```bash
-uvicorn main:app --reload
+curl -X GET "http://localhost:8000/health"
 ```
-The application natively establishes bindings on port 8000. 
-You can visit `http://localhost:8000/docs` in your browser to inspect the complete interactive Swagger schema mapping testing.
 
+Example response:
 
-## Architecture Topology
-
-The application routes interactions structurally adhering to this flow:
-1. `main.py` -> Ingests HTTP traffic dynamically injecting Middleware UUID identifiers onto payload streams.
-2. `AgentService` -> Re-routes payload logic to standard text evaluations and manages structural save injections onto `MemoryStore` native indexes instantly.
-3. `CoordinatorAgent` -> Initializes Python `StateGraph` logic resolving targeted explicit sub-agents depending dynamically on keyword constraints mapping to sequential branches explicitly!
-
-*(A visual representation PNG is also located in this directory for architectural diagrams).*
-
-## Request to Response Flow Diagram
-
-```mermaid
-flowchart TD
-    A[Client Request] --> B[FastAPI main.py]
-    B --> C[RequestIDLoggingMiddleware]
-    C --> D[API Routes /api/v1/analyze-code or /analyze-bug]
-    D --> E[AgentService.process_request]
-    E --> F[CoordinatorAgent LangGraph]
-
-    F --> G{Routing Decision}
-    G -->|contains 'code'| H[Code Flow Splitter]
-    G -->|contains 'bug'| I[BugTriageAgent]
-    G -->|unknown| Z[END]
-
-    H --> J[CodeReviewAgent]
-    H --> K[DocGeneratorAgent]
-
-    J --> L[Merge Results]
-    K --> L
-    I --> L
-
-    L --> M[MemoryStore.save]
-    M --> N[Formatted JSON Response]
-    N --> O[Client Output + X-Request-ID Header]
+```json
+{
+  "status": "healthy",
+  "service": "AgentOps Monitor"
+}
 ```
+
+### 2. Analyze Code
+```bash
+curl -X POST "http://localhost:8000/api/v1/analyze-code" \
+     -H "Content-Type: application/json" \
+     -d '{"code": "def divide(a, b): return a / b"}'
+```
+
+Example response:
+
+```json
+{
+  "status": "success",
+  "memory_id": "c1fcfb20-13a8-4de5-901c-6dcb304ac940",
+  "execution_trace": [
+    "CoordinatorAgent",
+    "CodeReviewAgent"
+  ],
+  "results": {
+    "CodeReviewAgent": "The code `def divide(a, b): return a / b` is missing a check for ZeroDivisionError. If `b` is 0, the program will crash."
+  }
+}
+```
+
+### 3. Analyze Bug
+```bash
+curl -X POST "http://localhost:8000/api/v1/analyze-bug" \
+     -H "Content-Type: application/json" \
+     -d '{"bug_description": "App crashes when user clicks submit without internet."}'
+```
+
+Example response:
+
+```json
+{
+  "status": "success",
+  "memory_id": "a5d0ef4a-81a1-42e1-881e-92fb108df1f8",
+  "execution_trace": [
+    "CoordinatorAgent",
+    "BugTriageAgent"
+  ],
+  "results": {
+    "BugTriageAgent": "The crash occurs because the network request does not handle connection exceptions. Wrap the submit request in a try-catch block and show an offline alert."
+  }
+}
+```
+
+## Screenshots
+
+### Bug Analysis
+![Bug Analysis](screenshot/bug-analyze.png)
+
+### Code Analysis
+![Code Analysis](screenshot/code-analyze.png)
