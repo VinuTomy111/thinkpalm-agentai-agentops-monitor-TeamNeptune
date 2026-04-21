@@ -49,7 +49,7 @@ Optional values such as `PROJECT_NAME`, `ENVIRONMENT`, and `DEBUG` can also be c
 From the `src` directory:
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload or python main.py
 ```
 
 Useful endpoints after startup:
